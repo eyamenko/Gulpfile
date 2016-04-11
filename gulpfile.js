@@ -12,15 +12,18 @@ var exts = {
     templates: "handlebars"
 };
 
-var tasks = [];
 var nsRoot = "";
 var nsConcerns = ["Collections", "Models", "Views", "Utils"];
 
+var tasks = [];
+
 var fs = require("fs");
 var gulp = require("gulp");
+var hbs = require("handlebars");
 var less = require("gulp-less");
 var wrap = require("gulp-wrap");
 var concat = require("gulp-concat");
+var nsdeclare = require("nsdeclare");
 var declare = require("gulp-declare");
 var stripBom = require("gulp-stripbom");
 var minifyCSS = require("gulp-minify-css");
@@ -28,7 +31,11 @@ var handlebars = require("gulp-handlebars");
 var autoprefixer = require("gulp-autoprefixer");
 
 apps.forEach(function(app) {
-    var ns = (nsRoot ? nsRoot + "." : "") + app + ".";
+    var ns = app + ".";
+
+    if (!!nsRoot)
+        ns = nsRoot + "." + ns;
+
     var buildStyles = "build:" + app.toLowerCase() + ":styles";
     var buildTemplates = "build:" + app.toLowerCase() + ":templates";
 
@@ -37,7 +44,9 @@ apps.forEach(function(app) {
             .pipe(stripBom({
                 showLog: false
             }))
-            .pipe(handlebars())
+            .pipe(handlebars({
+                handlebars: hbs
+            }))
             .pipe(wrap("Handlebars.template(<%= contents %>)"))
             .pipe(declare({
                 noRedeclare: true,
@@ -64,7 +73,7 @@ apps.forEach(function(app) {
     tasks.push(buildStyles, buildTemplates);
 
     fs.writeFile(paths.scripts + "/" + app.toLowerCase() + "/ns.js", nsConcerns.map(function(concern) {
-        return require("nsdeclare")(ns + concern);
+        return nsdeclare(ns + concern);
     }).join("\n"));
 });
 
